@@ -1,0 +1,1 @@
+#define IDI_AUDY_ICON 101
