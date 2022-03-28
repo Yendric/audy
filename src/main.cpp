@@ -9,7 +9,9 @@
 
 #define ID_ABOUT WM_USER + 1
 #define ID_EXIT WM_USER + 2
-#define HOTKEY MOD_SHIFT | MOD_ALT | MOD_NOREPEAT
+
+#define HOTKEY_MODIFIER MOD_SHIFT | MOD_ALT | MOD_NOREPEAT
+#define HOTKEY_KEY VK_UP
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void AddTrayIcon(HWND hwnd, UINT uID, UINT uCallbackMsg);
@@ -53,7 +55,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     // Registreer hotkey
-    RegisterHotKey(hWnd, 1, MOD_SHIFT | MOD_ALT | MOD_NOREPEAT, VK_UP);
+    RegisterHotKey(hWnd, 1, HOTKEY_MODIFIER, HOTKEY_KEY);
 
     // Message loop.
     MSG msg = {};
