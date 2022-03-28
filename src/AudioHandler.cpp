@@ -72,7 +72,7 @@ void setNextAudioDeviceAsDefault()
     }
 
     // Neem volgende device-index
-    defDeviceIndex = defDeviceIndex + 1 == count ? 0 : defDeviceIndex + 1;
+    defDeviceIndex = (defDeviceIndex + 1) % count;
 
     // Neem volgend device
     IMMDevice *newDevice;
