@@ -1,4 +1,4 @@
-CC=i686-w64-mingw32-gcc
+CC=x86_64-w64-mingw32-gcc
 CFLAGS=-g -Wall -municode -mwindows -lole32 -lshcore -lwinmm -O3 
 SRC=src
 OBJ=obj
@@ -12,7 +12,7 @@ all: resource.res $(BIN)
 
 resource.res: $(SRC)/resource.rc
 	mkdir -p $(OBJ)
-	i686-w64-mingw32-windres $(SRC)/resource.rc -O coff -o $(OBJ)/resource.o
+	x86_64-w64-mingw32-windres $(SRC)/resource.rc -O coff -o $(OBJ)/resource.o
 
 $(BIN):
 	mkdir -p $(BINDIR)
