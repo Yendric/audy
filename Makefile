@@ -1,9 +1,9 @@
-CC=g++
-CFLAGS=-g -Wall -municode -mwindows -lole32 -O3
+CC=i686-w64-mingw32-gcc
+CFLAGS=-g -Wall -municode -mwindows -lole32 -lshcore -lwinmm -O3 
 SRC=src
 OBJ=obj
-SRCS=$(wildcard $(SRC)/*.cpp)
-OBJS=$(patsubst $(SRC)/%.cpp, $(OBJ)/%.o, $(SRCS))
+SRCS=$(wildcard $(SRC)/*.c)
+OBJS=$(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SRCS))
 
 BINDIR=bin
 BIN=$(BINDIR)/audy
@@ -11,14 +11,16 @@ BIN=$(BINDIR)/audy
 all: resource.res $(BIN)
 
 resource.res: $(SRC)/resource.rc
-	windres $(SRC)/resource.rc -O coff -o  $(OBJ)/resource.res
+	mkdir -p $(OBJ)
+	i686-w64-mingw32-windres $(SRC)/resource.rc -O coff -o $(OBJ)/resource.o
 
-$(BIN): $(OBJS)
-	$(CC) $(OBJS) -o $@ $(OBJ)/resource.res $(CFLAGS)
-
-$(OBJ)/%.o: $(SRC)/%.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+$(BIN):
+	mkdir -p $(BINDIR)
+	$(CC) $(SRCS) $(OBJ)/resource.o -o $@ $(CFLAGS)
 
 clean:
-	$(RM) -r $(BINDIR)/* $(OBJ)/*
+	rm -rf $(BINDIR) $(OBJ)
 
+.PHONY: run
+run: all
+	$(BIN).exe

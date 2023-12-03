@@ -2,24 +2,28 @@
 
 ![Issues](https://img.shields.io/github/issues/Yendric/audy)
 
-Officiële Audy repository.
+A Win32 application that enables you to modify your audio output device using a keyboard shortcut.
 
-## Build
+## Building from source
+
+You can set the keyboard shortcut using the constants defined in [main.h](src/main.h).
 
 1. Clone: `git clone git@github.com:Yendric/audy`
 2. Run `make`
-3. Run de build in `/bin` en zet hem eventueel in je startupfolder
+3. You can now run the executable from `/bin/audy.exe`. If you want audy to run on startup you can put it inside of the `shell:startup` folder.
 
 ## Audy
 
-Audy is een win32 applicatie die een gebruiker toestaat de standaard audio-output van zijn windows-toestel te veranderen met een sneltoets. Aangezien audy in cpp met win32 geschreven is, heeft het een enorm lage impact om de prestaties van je systeem. Het gebruikt ongeveer 1MB ramgeheugen.
+Audy is a Win32 application that enables you to modify your default audio output device using a keyboard shortcut. The default keyboard shortcut is `Shift+Alt+ArrowUp`.
+Being written in C with the Win32 API, it has an incredibly small memory and CPU footprint. As such, it will have a negligible effect on your PC's performance when running in the background. The application can be controlled from the system tray.
 
 ## Todo
 
-- Sneltoets configureerbaar met GUI
-- Installer
-- ... laat maar weten
+-   User configurable keyboard shortcut
+-   Installer
+-   Automated build system
+-   ... please let me know what you want
 
-## Bijdragen
+## Contribute
 
-Je bent altijd welkom een issue/PR te maken als je suggesties hebt of fouten vindt.
+Feel free to create an issue/PR if you have suggestions or find mistakes.
