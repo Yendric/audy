@@ -8,9 +8,23 @@ A Win32 application that enables you to modify your audio output device using a 
 
 You can set the keyboard shortcut using the constants defined in [main.h](src/main.h).
 
+### Linux
+
+While the application only runs on Windows, it can be built on Linux using mingw-w64. The makefile is configured to do this automatically.
+This is useful if you're used to developping in a WSL environment, for example.
+
 1. Clone: `git clone git@github.com:Yendric/audy`
 2. Run `make`
 3. You can now run the executable from `/bin/audy.exe`. If you want audy to run on startup you can put it inside of the `shell:startup` folder.
+
+### Windows
+
+On Windows the application can be built using MSBuild.
+
+1. Clone: `git clone git@github.com:Yendric/audy`
+2. Open the folder in a VS tools command prompt (or something else that has access to msbuild.exe)
+3. Run `msbuild /property:Configuration=Release`
+4. The executable can be found in the `bin` folder. If you want audy to run on startup you can put it inside of the `shell:startup` folder.
 
 ## Audy
 
@@ -19,10 +33,10 @@ Being written in C with the Win32 API, it has an incredibly small memory and CPU
 
 ## Todo
 
--   User configurable keyboard shortcut
--   Installer
--   Automated build system
--   ... please let me know what you want
+- User configurable keyboard shortcut
+- Installer
+- Automated build system
+- ... please let me know what you want
 
 ## Contribute
 

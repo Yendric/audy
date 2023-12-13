@@ -1,6 +1,6 @@
 #include "main.h"
 
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
+int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nShowCmd)
 {
     WNDCLASS wc = {
         .lpfnWndProc = WindowProc,
@@ -29,11 +29,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         return 1;
 
     SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
-    // Registreer hotkey
     RegisterHotKey(hWnd, 1, HOTKEY_MODIFIER, HOTKEY_KEY);
 
-    // Message loop.
-    MSG msg = {};
+    // Message loop
+    MSG msg = {0};
     while (GetMessage(&msg, NULL, 0, 0))
     {
         TranslateMessage(&msg);
@@ -143,8 +142,8 @@ void OpenAboutBox()
         .hwndOwner = NULL,
         .hInstance = GetModuleHandle(NULL),
         .lpszText = L"Audy is a Win32 application that enables users to modify their default audio output device using a keyboard shortcut."
-                    "\n\nAudy, version " APP_VERSION
-                    "\nCopyright © 2023 Yendric Van Roey",
+                    L"\n\nAudy, version " APP_VERSION
+                    L"\nCopyright © 2023 Yendric Van Roey",
         .lpszCaption = L"About Audy",
         .dwStyle = MB_USERICON | MB_OK,
         .dwLanguageId = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
