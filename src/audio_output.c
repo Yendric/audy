@@ -67,14 +67,14 @@ HRESULT setNextAudioDeviceAsDefault()
         if (FAILED(hr))
             return hr;
 
+        pDevice->lpVtbl->Release(pDevice);
+
         // Check if its the default device
         if (wcscmp(wstrID, defaultId) == 0)
         {
             defDeviceIndex = i;
             break;
         }
-
-        pDevice->lpVtbl->Release(pDevice);
     }
 
     // Get next device index
