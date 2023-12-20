@@ -30,7 +30,7 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: Automated build
+        tag_name: automated_build
         files: |
           ./bin/x64/Release/audy.exe
       env:
