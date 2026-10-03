@@ -1,0 +1,22 @@
+name: Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: cmake -B build
+      - run: cmake --build build --config Release
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: automated_build
+          files: build/Release/audy.exe
