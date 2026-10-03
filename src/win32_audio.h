@@ -1,3 +1,7 @@
+#include <windows.h>
+#include <mmreg.h>
+#include <propidl.h>
+
 /**
  * The IPolicyConfig interface was originally reverse engineered by EreTIk and
  * allows us to change the default audio output device.

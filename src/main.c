@@ -1,3 +1,4 @@
+#define WIN32_LEAN_AND_MEAN
 #include "main.h"
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nShowCmd)
@@ -29,7 +30,19 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         return 1;
 
     SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
-    RegisterHotKey(hWnd, 1, HOTKEY_MODIFIER, HOTKEY_KEY);
+
+    INITCOMMONCONTROLSEX icex = {
+        .dwSize = sizeof(INITCOMMONCONTROLSEX),
+        .dwICC = ICC_HOTKEY_CLASS
+    };
+    InitCommonControlsEx(&icex);
+
+    ShortcutConfig config;
+    LoadSettings(&config);
+    if (!RegisterHotKey(hWnd, 1, config.fsModifiers, config.vk))
+    {
+        MessageBox(NULL, L"Failed to register hotkey. It might be in use by another application.", L"Audy Error", MB_OK | MB_ICONERROR);
+    }
 
     // Message loop
     MSG msg = {0};
@@ -71,6 +84,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {
+        case ID_SETTINGS:
+            OpenSettings(hWnd);
+            return 0;
         case ID_ABOUT:
             OpenAboutBox();
             return 0;
@@ -120,7 +136,8 @@ void ShowTrayPopup(HWND hWnd)
     HMENU hPop = CreatePopupMenu();
 
     InsertMenu(hPop, 0, MF_BYPOSITION | MF_STRING, ID_ABOUT, L"About Audy");
-    InsertMenu(hPop, 1, MF_BYPOSITION | MF_STRING, ID_EXIT, L"Exit");
+    InsertMenu(hPop, 1, MF_BYPOSITION | MF_STRING, ID_SETTINGS, L"Settings...");
+    InsertMenu(hPop, 2, MF_BYPOSITION | MF_STRING, ID_EXIT, L"Exit");
 
     // The default item is shown in bold
     SetMenuDefaultItem(hPop, ID_ABOUT, FALSE);
@@ -153,4 +170,110 @@ void OpenAboutBox()
     };
 
     MessageBoxIndirect(&mbp);
+}
+
+void LoadSettings(ShortcutConfig *config)
+{
+    HKEY hKey;
+    config->fsModifiers = DEFAULT_HOTKEY_MODIFIER;
+    config->vk = DEFAULT_HOTKEY_KEY;
+
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Audy", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+    {
+        DWORD dwSize = sizeof(DWORD);
+        RegQueryValueEx(hKey, L"Modifiers", NULL, NULL, (LPBYTE)&config->fsModifiers, &dwSize);
+        RegQueryValueEx(hKey, L"Key", NULL, NULL, (LPBYTE)&config->vk, &dwSize);
+        RegCloseKey(hKey);
+    }
+}
+
+void SaveSettings(const ShortcutConfig *config)
+{
+    HKEY hKey;
+    if (RegCreateKeyEx(HKEY_CURRENT_USER, L"Software\\Audy", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS)
+    {
+        RegSetValueEx(hKey, L"Modifiers", 0, REG_DWORD, (const BYTE *)&config->fsModifiers, sizeof(DWORD));
+        RegSetValueEx(hKey, L"Key", 0, REG_DWORD, (const BYTE *)&config->vk, sizeof(DWORD));
+        RegCloseKey(hKey);
+    }
+}
+
+void OpenSettings(HWND hWnd)
+{
+    DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SETTINGS), hWnd, SettingsDlgProc);
+}
+
+static bool IsExtendedKey(WORD vk)
+{
+    switch (vk)
+    {
+    case VK_UP: case VK_DOWN: case VK_LEFT: case VK_RIGHT:
+    case VK_HOME: case VK_END: case VK_PRIOR: case VK_NEXT:
+    case VK_INSERT: case VK_DELETE: case VK_DIVIDE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+INT_PTR CALLBACK SettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    switch (uMsg)
+    {
+    case WM_INITDIALOG:
+    {
+        ShortcutConfig config;
+        LoadSettings(&config);
+
+        // Convert RegisterHotKey modifiers to HOTKEY_CLASS modifiers
+        WORD hkModifiers = 0;
+        if (config.fsModifiers & MOD_ALT) hkModifiers |= HOTKEYF_ALT;
+        if (config.fsModifiers & MOD_CONTROL) hkModifiers |= HOTKEYF_CONTROL;
+        if (config.fsModifiers & MOD_SHIFT) hkModifiers |= HOTKEYF_SHIFT;
+        
+        // Add extended flag for display purposes (arrows, etc.)
+        if (IsExtendedKey((WORD)config.vk)) hkModifiers |= HOTKEYF_EXT;
+
+        SendDlgItemMessage(hDlg, IDC_HOTKEY, HKM_SETHOTKEY, MAKEWORD(config.vk, hkModifiers), 0);
+        
+        // Focus OK button so it doesn't immediately capture a keypress (like the one used to open the menu)
+        SetFocus(GetDlgItem(hDlg, IDOK));
+        return (INT_PTR)FALSE;
+    }
+
+    case WM_COMMAND:
+        if (LOWORD(wParam) == IDOK)
+        {
+            LRESULT result = SendDlgItemMessage(hDlg, IDC_HOTKEY, HKM_GETHOTKEY, 0, 0);
+            WORD vk = LOBYTE(LOWORD(result));
+            WORD hkModifiers = HIBYTE(LOWORD(result));
+
+            ShortcutConfig config;
+            config.vk = vk;
+            config.fsModifiers = MOD_NOREPEAT;
+            if (hkModifiers & HOTKEYF_ALT) config.fsModifiers |= MOD_ALT;
+            if (hkModifiers & HOTKEYF_CONTROL) config.fsModifiers |= MOD_CONTROL;
+            if (hkModifiers & HOTKEYF_SHIFT) config.fsModifiers |= MOD_SHIFT;
+
+            SaveSettings(&config);
+
+            // Re-register hotkey
+            HWND hWndMain = GetParent(hDlg);
+            UnregisterHotKey(hWndMain, 1);
+            if (!RegisterHotKey(hWndMain, 1, config.fsModifiers, config.vk))
+            {
+                MessageBox(hDlg, L"Failed to register hotkey. It might be in use by another application.", L"Error", MB_OK | MB_ICONERROR);
+            }
+
+            EndDialog(hDlg, IDOK);
+            return (INT_PTR)TRUE;
+        }
+        else if (LOWORD(wParam) == IDCANCEL)
+        {
+            EndDialog(hDlg, IDCANCEL);
+            return (INT_PTR)TRUE;
+        }
+        break;
+    }
+    return (INT_PTR)FALSE;
 }
