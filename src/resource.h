@@ -1,6 +1,11 @@
 #define IDI_AUDY_ICON 101
 #define IDD_SETTINGS 102
 #define IDC_HOTKEY 1001
-#ifndef IDC_STATIC
-#define IDC_STATIC -1
-#endif
+
+#define ID_ABOUT 2001
+#define ID_SETTINGS 2002
+#define ID_EXIT 2003
+
+#define STR_(x) #x
+#define STR(x) STR_(x)
+#define VERSION_STRING STR(VERSION_MAJOR.VERSION_MINOR)

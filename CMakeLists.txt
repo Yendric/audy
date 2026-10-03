@@ -1,29 +1,23 @@
 cmake_minimum_required(VERSION 3.15)
-project(audy C)
+project(audy VERSION 1.1 LANGUAGES C RC)
 
-# Set C standard
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED True)
+add_executable(audy WIN32 src/main.c src/audio_output.c src/resource.rc)
 
-# Add executable target. WIN32 specifies it's a Windows GUI application (avoids console window)
-add_executable(audy WIN32
-    src/main.c
-    src/audio_output.c
-    src/resource.rc
+set_target_properties(audy PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON)
+
+target_compile_definitions(audy PRIVATE
+    UNICODE _UNICODE WIN32_LEAN_AND_MEAN
+    VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+    VERSION_MINOR=${PROJECT_VERSION_MINOR}
 )
 
-# Specify include directories
-target_include_directories(audy PRIVATE src)
+target_link_libraries(audy PRIVATE comctl32 ole32)
 
-# Link required Windows libraries
-target_link_libraries(audy PRIVATE
-    comctl32
-    ole32
-    shcore
-    winmm
-)
-
-# Add source character set option for MSVC (equivalent to /source-charset:utf-8)
 if(MSVC)
-    target_compile_options(audy PRIVATE "/source-charset:utf-8")
+    target_compile_options(audy PRIVATE $<$<COMPILE_LANGUAGE:C>:/W4 /utf-8>)
+    # The manifest is embedded through resource.rc
+    target_link_options(audy PRIVATE /MANIFEST:NO)
+else()
+    target_compile_options(audy PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wall -Wextra>)
+    target_link_options(audy PRIVATE -municode)
 endif()
