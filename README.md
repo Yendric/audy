@@ -2,38 +2,26 @@
 
 ![Issues](https://img.shields.io/github/issues/Yendric/audy)
 
-A Win32 application that enables you to modify your audio output device using a keyboard shortcut.
-
-## Audy
-
-Audy is a Win32 application that enables you to modify your default audio output device using a keyboard shortcut. The default keyboard shortcut is `Shift+Alt+ArrowUp`.
-Being written in C with the Win32 API, it has an incredibly small memory and CPU footprint. As such, it will have a negligible effect on your PC's performance when running in the background. The application can be controlled from the system tray.
+Audy is a Win32 application that enables you to modify your default audio output device using a keyboard shortcut. The default shortcut is `Shift+Alt+ArrowUp`, which can be changed from the tray icon's settings.
+Being written in C with the Win32 API, it has a negligible effect on your PC's performance when running in the background.
 
 ## Building from source
 
-You can set the keyboard shortcut using the constants defined in [main.h](src/main.h).
-
-### Linux
-
-While the application only runs on Windows, it can be built on Linux using mingw-w64. The makefile is configured to do this automatically.
-This is useful if you're used to developing in a WSL environment, for example.
+Audy is built with CMake. From a Visual Studio developer prompt:
 
 1. Clone: `git clone git@github.com:Yendric/audy`
-2. Run `make`
-3. You can now run the executable from `/bin/audy.exe`. If you want audy to run on startup you can put it inside of the `shell:startup` folder.
+2. Run `cmake -B build` and `cmake --build build --config Release`
+3. The executable can be found at `build/Release/audy.exe`. If you want Audy to run on startup you can put it inside of the `shell:startup` folder.
 
-### Windows
+It can also be cross-compiled from Linux with mingw-w64:
 
-On Windows the application can be built using MSBuild.
-
-1. Clone: `git clone git@github.com:Yendric/audy`
-2. Open the folder in a VS tools command prompt (or something else that has access to msbuild.exe)
-3. Run `msbuild /property:Configuration=Release`
-4. The executable can be found in the `bin` folder. If you want audy to run on startup you can put it inside of the `shell:startup` folder.
+```sh
+cmake -B build -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc -DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres
+cmake --build build
+```
 
 ## Todo
 
-- User configurable keyboard shortcut
 - Installer
 - Versioning system
 - ... please let me know what you want
