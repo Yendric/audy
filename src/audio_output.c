@@ -1,108 +1,102 @@
+#include <initguid.h>
+#include <mmdeviceapi.h>
 #include "audio_output.h"
+#include "policy_config.h"
 
-HRESULT SetDefaultAudioPlaybackDevice(LPCWSTR devID)
+#ifndef __MINGW32__
+DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xbcde0395, 0xe52f, 0x467c, 0x8e, 0x3d, 0xc4, 0x57, 0x92, 0x91, 0x69, 0x2e);
+DEFINE_GUID(IID_IMMDeviceEnumerator, 0xa95664d2, 0x9614, 0x4f35, 0xa7, 0x46, 0xde, 0x8d, 0xb6, 0x36, 0x17, 0xe6);
+#endif
+
+static HRESULT SetDefaultOutput(LPCWSTR id)
 {
-    CoInitialize(NULL);
-
-    IPolicyConfig *pPolicyConfig = NULL;
-    HRESULT hr = CoCreateInstance(&CLSID_IPolicyConfig, NULL, CLSCTX_ALL, &IID_IPolicyConfig, (void **)&pPolicyConfig);
-
+    IPolicyConfig *policy;
+    HRESULT hr = CoCreateInstance(&CLSID_PolicyConfig, NULL, CLSCTX_ALL, &IID_IPolicyConfig, (void **)&policy);
     if (FAILED(hr))
         return hr;
 
-    hr = pPolicyConfig->lpVtbl->SetDefaultEndpoint(pPolicyConfig, devID, eConsole);
+    hr = policy->lpVtbl->SetDefaultEndpoint(policy, id, eConsole);
 
-    if (FAILED(hr))
-        return hr;
-
-    pPolicyConfig->lpVtbl->Release(pPolicyConfig);
-
-    CoUninitialize();
-
-    return S_OK;
+    policy->lpVtbl->Release(policy);
+    return hr;
 }
 
-HRESULT setNextAudioDeviceAsDefault()
+HRESULT CycleAudioOutput(void)
 {
-    HRESULT hr = CoInitialize(NULL);
+    IMMDeviceEnumerator *enumerator = NULL;
+    IMMDeviceCollection *devices = NULL;
+    IMMDevice *current = NULL, *next = NULL;
+    LPWSTR currentId = NULL, nextId = NULL;
+    UINT count, nextIndex = 0;
+
+    HRESULT hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void **)&enumerator);
     if (FAILED(hr))
-        return hr;
+        goto cleanup;
 
-    // MMDevice Enumerator
-    IMMDeviceEnumerator *pEnum = NULL;
-    hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void **)&pEnum);
+    hr = enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &current);
     if (FAILED(hr))
-        return hr;
+        goto cleanup;
 
-    // Get default audio endpoint
-    IMMDevice *pDefDevice = NULL;
-    hr = pEnum->lpVtbl->GetDefaultAudioEndpoint(pEnum, eRender, eMultimedia, &pDefDevice);
+    hr = current->lpVtbl->GetId(current, &currentId);
     if (FAILED(hr))
-        return hr;
+        goto cleanup;
 
-    LPWSTR defaultId;
-    pDefDevice->lpVtbl->GetId(pDefDevice, &defaultId);
-
-    // Get all active audio endpoints
-    IMMDeviceCollection *pDevices;
-    hr = pEnum->lpVtbl->EnumAudioEndpoints(pEnum, eRender, DEVICE_STATE_ACTIVE, &pDevices);
+    hr = enumerator->lpVtbl->EnumAudioEndpoints(enumerator, eRender, DEVICE_STATE_ACTIVE, &devices);
     if (FAILED(hr))
-        return hr;
+        goto cleanup;
 
-    // Loop over these endpoints, and find the default ones id
-    UINT count;
-    pDevices->lpVtbl->GetCount(pDevices, &count);
-    int defDeviceIndex = -1;
+    hr = devices->lpVtbl->GetCount(devices, &count);
+    if (FAILED(hr))
+        goto cleanup;
+
+    if (count == 0)
+    {
+        hr = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+        goto cleanup;
+    }
+
     for (UINT i = 0; i < count; i++)
     {
-        // Get device at index i
-        IMMDevice *pDevice;
-        hr = pDevices->lpVtbl->Item(pDevices, i, &pDevice);
+        IMMDevice *device;
+        hr = devices->lpVtbl->Item(devices, i, &device);
         if (FAILED(hr))
-            return hr;
+            goto cleanup;
 
-        // Get device ID
-        LPWSTR wstrID;
-        hr = pDevice->lpVtbl->GetId(pDevice, &wstrID);
+        LPWSTR id;
+        hr = device->lpVtbl->GetId(device, &id);
+        device->lpVtbl->Release(device);
         if (FAILED(hr))
-            return hr;
+            goto cleanup;
 
-        pDevice->lpVtbl->Release(pDevice);
-
-        // Check if its the default device
-        if (wcscmp(wstrID, defaultId) == 0)
+        BOOL isCurrent = wcscmp(id, currentId) == 0;
+        CoTaskMemFree(id);
+        if (isCurrent)
         {
-            defDeviceIndex = i;
+            nextIndex = (i + 1) % count;
             break;
         }
     }
 
-    // Get next device index
-    defDeviceIndex = (defDeviceIndex + 1) % count;
-
-    // Get next device
-    IMMDevice *newDevice;
-    hr = pDevices->lpVtbl->Item(pDevices, defDeviceIndex, &newDevice);
+    hr = devices->lpVtbl->Item(devices, nextIndex, &next);
     if (FAILED(hr))
-        return hr;
+        goto cleanup;
 
-    // Get device id
-    LPWSTR newDeviceID = NULL;
-    hr = newDevice->lpVtbl->GetId(newDevice, &newDeviceID);
+    hr = next->lpVtbl->GetId(next, &nextId);
     if (FAILED(hr))
-        return hr;
+        goto cleanup;
 
-    // Set new device as default
-    hr = SetDefaultAudioPlaybackDevice(newDeviceID);
-    if (FAILED(hr))
-        return hr;
+    hr = SetDefaultOutput(nextId);
 
-    // Cleanup COM
-    pDefDevice->lpVtbl->Release(pDefDevice);
-    newDevice->lpVtbl->Release(newDevice);
-    pDevices->lpVtbl->Release(pDevices);
-    pEnum->lpVtbl->Release(pEnum);
-    CoUninitialize();
-
-    return S_OK;
+cleanup:
+    CoTaskMemFree(nextId);
+    CoTaskMemFree(currentId);
+    if (next)
+        next->lpVtbl->Release(next);
+    if (current)
+        current->lpVtbl->Release(current);
+    if (devices)
+        devices->lpVtbl->Release(devices);
+    if (enumerator)
+        enumerator->lpVtbl->Release(enumerator);
+    return hr;
 }

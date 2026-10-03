@@ -1,5 +1,3 @@
-bin
-obj
+build
 .vscode
-audy.vcxproj.*
 .vs
